@@ -7,7 +7,7 @@ import {
   ScrollRestoration,
 } from "@remix-run/react";
 import type { LinksFunction } from "@remix-run/node";
-import styles from "./styles/app.css";
+import styles from "~/styles/app.css";
 
 export const links: LinksFunction = () => {
   return [{ rel: "stylesheet", href: styles }];
@@ -15,10 +15,14 @@ export const links: LinksFunction = () => {
 
 export default function App() {
   return (
-    <html lang="en">
+    <html lang="en" className="overscroll-y-none">
       <head>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <meta
+          name="apple-mobile-web-app-status-bar-style"
+          content="black-translucent"
+        />
         <Meta />
         <Links />
       </head>

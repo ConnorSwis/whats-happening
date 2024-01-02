@@ -1,5 +1,5 @@
 import { FaRegClock, FaLocationDot, FaCalendarDay } from "react-icons/fa6";
-import { useLoaderData } from "@remix-run/react";
+import { Form, useLoaderData } from "@remix-run/react";
 import { useState, useEffect } from "react";
 import { json } from "@remix-run/node";
 
@@ -67,55 +67,78 @@ export default function Index() {
 
             const [registering, setRegisering] = useState(false);
             const [registered, setRegistered] = useState(false);
+            const sortedTags = tags.sort((a, b) => b.length - a.length);
 
+            // Step 2: Reorder the sorted tags to L, S, S, L, S, S pattern.
+            const orderedTags: string[] = [];
+            let longIndex = 0; // Index for the next longest tag.
+            let shortIndex = sortedTags.length - 1; // Index for the next shortest tag.
+
+            while (longIndex <= shortIndex) {
+              // Add the next longest tag.
+              if (longIndex <= shortIndex) {
+                orderedTags.push(sortedTags[longIndex++]);
+              }
+
+              // Add the next two shortest tags.
+              for (let i = 0; i < 2 && longIndex <= shortIndex; i++) {
+                orderedTags.push(sortedTags[shortIndex--]);
+              }
+            }
             return (
               <div
-                className="rounded-lg outline outline-1 outline-background-200 text-background-900 dark:text-background-50 scroll-mt-16"
+                className="flex flex-col justify-between rounded-lg outline outline-1 outline-background-200 text-background-900 dark:text-background-50 scroll-mt-16"
                 id={id}
                 key={id}
               >
                 {selected !== id ? (
                   <>
-                    <div className="flex flex-col space-y-1.5 p-6">
-                      <h3 className="text-lg font-semibold h-14 md:text-xl line-clamp-2">
-                        {name}
-                      </h3>
-                      <div className="flex flex-wrap items-center gap-2">
-                        {tags.map((tag, i) => {
-                          return <Tag key={i} title={tag} />;
-                        })}
+                    <div>
+                      <div className="flex flex-col space-y-1.5 p-6">
+                        <h3 className="text-lg font-semibold h-14 md:text-xl line-clamp-2">
+                          {name}
+                        </h3>
+                      </div>
+                      <div className="px-6 line-clamp-2">{description}</div>
+                      <div className="p-6">
+                        <div className="flex items-center">
+                          <FaCalendarDay className="w-4 h-4 mr-2 antialiased" />
+                          <p>{dateString}</p>
+                        </div>
+                        <div className="flex items-center">
+                          <FaRegClock className="w-4 h-4 mr-2" />
+                          <p>{timeString}</p>
+                        </div>
+                        <div className="flex items-center">
+                          <FaLocationDot className="w-4 h-4 mr-2" />
+                          <p>
+                            {city}, {state}
+                          </p>
+                        </div>
+                        <div className="flex flex-wrap items-center gap-2 mt-2 -mb-2">
+                          {orderedTags.map((tag, i) => {
+                            return <Tag key={i} title={tag} />;
+                          })}
+                        </div>
                       </div>
                     </div>
-                    <div className="px-6 line-clamp-2">{description}</div>
-                    <div className="p-6">
-                      <div className="flex items-center">
-                        <FaCalendarDay className="w-4 h-4 mr-2 antialiased" />
-                        <p>{dateString}</p>
-                      </div>
-                      <div className="flex items-center">
-                        <FaRegClock className="w-4 h-4 mr-2" />
-                        <p>{timeString}</p>
-                      </div>
-                      <div className="flex items-center">
-                        <FaLocationDot className="w-4 h-4 mr-2" />
-                        <p>{city}</p>
-                      </div>
+                    <div className="flex flex-col items-baseline justify-start h-max">
+                      <button
+                        onClick={() => {
+                          selected === id ? setSelected("") : setSelected(id);
+                        }}
+                        className="inline-flex items-center justify-center h-10 px-4 py-2 text-sm font-medium transition-colors rounded-bl-lg outline outline-1 rounded-tr-md outline-background-200"
+                      >
+                        More Info
+                      </button>
                     </div>
-                    <button
-                      onClick={() => {
-                        selected === id ? setSelected("") : setSelected(id);
-                      }}
-                      className="inline-flex items-center justify-center h-10 px-4 py-2 mt-4 text-sm font-medium transition-colors rounded-bl-lg outline outline-1 rounded-tr-md outline-background-200"
-                    >
-                      More Info
-                    </button>
                   </>
                 ) : (
                   <div className="divide-y rounded-lg outline outline-1 outline-background-200 text-background-900 dark:text-background-50">
                     <div className="flex flex-col space-y-1.5 p-4">
                       <h1 className="text-3xl font-bold">{name}</h1>
-                      <div className="flex flex-wrap items-center gap-2">
-                        {tags.map((tag, i) => {
+                      <div className="flex flex-wrap items-center gap-2 text-lg ">
+                        {orderedTags.map((tag, i) => {
                           return <Tag key={i} title={tag} />;
                         })}
                       </div>
@@ -124,40 +147,113 @@ export default function Index() {
                       {!registering && (
                         <>
                           <div className="grid gap-2">
-                            <h3 className="text-lg font-bold">Date</h3>
-                            <p className="text-sm text-background-700 dark:text-background-200">
-                              {dateString}
-                            </p>
-                          </div>
-                          <div className="grid gap-2">
-                            <h3 className="text-lg font-bold">Time</h3>
-                            <p className="text-sm text-background-700 dark:text-background-200">
-                              {timeString} to {endTimeString} EST ({duration}{" "}
-                              hour
-                              {duration !== 1 && "s"})
-                            </p>
-                          </div>
-                          <div className="grid gap-2">
-                            <h3 className="text-lg font-bold">Location</h3>
-                            <p className="text-sm text-background-700 dark:text-background-200">
-                              {address}, {city}, {state}
-                            </p>
-                          </div>
-                          <div className="grid gap-2">
                             <h3 className="text-lg font-bold">Description</h3>
                             <p className="text-sm text-background-700 dark:text-background-200">
-                              Lorem ipsum dolor sit amet, consectetur adipiscing
-                              elit, sed do eiusmod tempor incididunt ut labore
-                              et dolore magna aliqua.
+                              {description}
                             </p>
                           </div>
+                          <div className="p-3">
+                            <div className="flex items-center">
+                              <FaCalendarDay className="w-4 h-4 mr-2 antialiased" />
+                              <p>{dateString}</p>
+                            </div>
+                            <div className="flex items-center">
+                              <FaRegClock className="w-4 h-4 mr-2" />
+                              <p>
+                                {timeString} {duration && `- ${endTimeString}`}
+                              </p>
+                            </div>
+                            <div className="flex items-start">
+                              <FaLocationDot className="w-4 h-4 mr-2" />
+                              <p>
+                                {address}
+                                <br />
+                                {city}, {state}
+                              </p>
+                            </div>
+                          </div>
                         </>
+                      )}
+                      {registering && (
+                        <Form>
+                          <div className="grid gap-2">
+                            <label
+                              className="text-lg font-bold"
+                              htmlFor="firstName"
+                            >
+                              First Name
+                            </label>
+                            <input
+                              className="w-full p-2 text-sm border rounded-lg outline-none bg-background-50 dark:bg-background-900 border-background-300"
+                              id="firstName"
+                              type="text"
+                            />
+                          </div>
+                          <div className="grid gap-2">
+                            <label
+                              className="text-lg font-bold"
+                              htmlFor="lastName"
+                            >
+                              Last Name
+                            </label>
+                            <input
+                              className="w-full p-2 text-sm border rounded-lg outline-none bg-background-50 dark:bg-background-900 border-background-300"
+                              id="lastName"
+                              type="text"
+                            />
+                          </div>
+                          <div className="grid gap-2">
+                            <label
+                              className="text-lg font-bold"
+                              htmlFor="email"
+                            >
+                              Email
+                            </label>
+                            <input
+                              className="p-2 text-sm border rounded-lg outline-none bg-background-50 dark:bg-background-900 border-background-300"
+                              id="email"
+                              type="email"
+                            />
+                          </div>
+                          <div className="grid gap-2">
+                            <label
+                              className="text-lg font-bold"
+                              htmlFor="message"
+                            >
+                              Message (Optional)
+                            </label>
+                            <textarea
+                              className="p-2 text-sm border rounded-lg outline-none bg-background-50 dark:bg-background-900 border-background-300"
+                              id="message"
+                            />
+                          </div>
+                        </Form>
                       )}
                     </div>
                     <div className="flex justify-between p-4">
                       <div>
-                        <button className="inline-flex items-center justify-center h-10 px-4 py-2 mr-2 text-sm font-medium border rounded-md hover:bg-primary-500 active:bg-primary-500/[.8] active:shadow-inner hover:text-background-50">
-                          Share Event
+                        <button
+                          onClick={() => {
+                            setSelected("");
+                          }}
+                          className="inline-flex items-center justify-center h-10 px-4 py-2 mr-2 text-sm font
+                        medium border rounded-md hover:bg-primary-500 active:bg-primary-500/[.8] active:shadow
+                        hover:text-background-50"
+                        >
+                          Less
+                        </button>
+                      </div>
+                      <div>
+                        <button
+                          onClick={() => {
+                            if (registering) {
+                              setRegisering(false);
+                            }
+                          }}
+                          className="inline-flex items-center justify-center h-10 px-4 py-2 mr-2 text-sm font-medium border rounded-md hover:bg-primary-500 active:bg-primary-500/[.8] active:shadow-inner hover:text-background-50"
+                        >
+                          {!registering && "Share Event"}
+                          {registering && "Cancel"}
                         </button>
                         <button
                           onClick={() => {
@@ -166,7 +262,7 @@ export default function Index() {
                           className="inline-flex items-center justify-center h-10 px-4 py-2 text-sm font-medium text-white transition-colors duration-75 rounded-md bg-primary-500 hover:bg-primary-500 active:bg-primary-500/90 active:shadow-inner hover:outline hover:outline-1"
                         >
                           {!registering && "Register"}
-                          {registering && "Cancel"}
+                          {registering && "Submit"}
                         </button>
                       </div>
                     </div>

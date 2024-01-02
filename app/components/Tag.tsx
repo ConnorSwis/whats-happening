@@ -18,10 +18,10 @@ export default function Tag({ title }: { title: string }) {
   return (
     <span
       className={
-        " px-2 py-1 text-xs rounded-full line-clamp-1" +
+        " px-2.5 py-1 text-xs rounded-full line-clamp-1 tag" +
         (colord(color).luminance() < 0.55
-          ? " text-background-50"
-          : " text-background-900")
+          ? " text-background-50 "
+          : " text-background-900 ")
       }
       style={{ backgroundColor: color }}
     >
