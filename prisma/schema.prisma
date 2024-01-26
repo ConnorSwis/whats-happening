@@ -19,19 +19,31 @@ model Event {
   address     String
   city        String
   state       String
-  creator     String
-  attendees   Int
+  zip         String
+  author      User     @relation(fields: [authorId], references: [id])
+  authorId    String   @db.ObjectId
+  attendees   Int      @default(0)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
-  tags        String[]
-  Tags        Tag[]    @relation(fields: [tagIds], references: [id])
+  tags        Tag[]    @relation(fields: [tagIds], references: [id])
   tagIds      String[] @db.ObjectId
 }
 
 model Tag {
   id       String   @id @default(auto()) @map("_id") @db.ObjectId
-  name     String   @unique
+  title    String   @unique
   color    String
   eventIds String[] @db.ObjectId
   Events   Event[]  @relation(fields: [eventIds], references: [id])
+}
+
+model User {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  email     String   @unique
+  password  String
+  firstName String
+  lastName  String
+  events    Event[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }

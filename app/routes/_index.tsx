@@ -6,10 +6,68 @@ import { json } from "@remix-run/node";
 import { getEvents } from "~/server/events.server";
 import Layout from "~/components/Layout";
 import Tag from "~/components/Tag";
+import { getTag } from "~/server/tags.server";
 
 export async function loader() {
-  return json({ events: await getEvents(50) });
+  const events = await getEvents(100);
+  return json({ events });
 }
+
+interface DateTimeFormatterProps {
+  date: Date;
+  duration: number;
+}
+const DateTimeFormatter: React.FC<DateTimeFormatterProps> = ({
+  date,
+  duration,
+}) => {
+  const monthNames = [
+    "January",
+    "February",
+    "March",
+    "April",
+    "May",
+    "June",
+    "July",
+    "August",
+    "September",
+    "October",
+    "November",
+    "December",
+  ];
+
+  const day = date.getDate();
+  const year = date.getFullYear();
+  const month = monthNames[date.getMonth()];
+  const dateString = `${month} ${day}, ${year}`;
+
+  let hours = date.getHours();
+  let endHours = hours + duration;
+  const minutes = date.getMinutes();
+  const ampm = hours >= 12 ? "PM" : "AM";
+  const endAmpm = endHours >= 12 ? "PM" : "AM";
+  hours = hours % 12;
+  endHours = endHours % 12;
+  hours = hours ? hours : 12;
+  endHours = endHours ? endHours : 12;
+  const minutesStr = minutes < 10 ? "0" + minutes : minutes.toString();
+  const timeString = `${hours}:${minutesStr} ${ampm}`;
+  const endTimeString = `${endHours}:${minutesStr} ${endAmpm}`;
+
+  return (
+    <>
+      <div className="flex items-center">
+        <FaCalendarDay className="w-4 h-4 mr-2 antialiased" />
+        <p>{dateString}</p>
+      </div>
+      <div className="flex items-center">
+        <FaRegClock className="w-4 h-4 mr-2" />
+        <p>{timeString}</p>
+        {duration && <span> - {endTimeString}</span>}
+      </div>
+    </>
+  );
+};
 
 export default function Index() {
   const { events } = useLoaderData<typeof loader>();
@@ -56,6 +114,7 @@ export default function Index() {
               address,
               attendees,
               state,
+              zip,
               tags,
             },
             i
@@ -67,27 +126,25 @@ export default function Index() {
 
             const [registering, setRegisering] = useState(false);
             const [registered, setRegistered] = useState(false);
-            const sortedTags = tags.sort((a, b) => b.length - a.length);
+            const sortedTags = tags.sort(
+              (a, b) => b.title.length - a.title.length
+            );
 
-            // Step 2: Reorder the sorted tags to L, S, S, L, S, S pattern.
-            const orderedTags: string[] = [];
-            let longIndex = 0; // Index for the next longest tag.
-            let shortIndex = sortedTags.length - 1; // Index for the next shortest tag.
+            const orderedTags = [];
+            let longIndex = 0;
+            let shortIndex = sortedTags.length - 1;
 
             while (longIndex <= shortIndex) {
-              // Add the next longest tag.
               if (longIndex <= shortIndex) {
                 orderedTags.push(sortedTags[longIndex++]);
               }
-
-              // Add the next two shortest tags.
               for (let i = 0; i < 2 && longIndex <= shortIndex; i++) {
                 orderedTags.push(sortedTags[shortIndex--]);
               }
             }
             return (
               <div
-                className="flex flex-col justify-between rounded-lg outline outline-1 outline-background-200 text-background-900 dark:text-background-50 scroll-mt-16"
+                className="flex flex-col justify-between transition-all rounded-lg outline outline-1 outline-background-200 hover:shadow-md text-background-900 dark:text-background-50 scroll-mt-16 hover:outline-background-300 dark:hover:outline-background-50 group "
                 id={id}
                 key={id}
               >
@@ -101,14 +158,10 @@ export default function Index() {
                       </div>
                       <div className="px-6 line-clamp-2">{description}</div>
                       <div className="p-6">
-                        <div className="flex items-center">
-                          <FaCalendarDay className="w-4 h-4 mr-2 antialiased" />
-                          <p>{dateString}</p>
-                        </div>
-                        <div className="flex items-center">
-                          <FaRegClock className="w-4 h-4 mr-2" />
-                          <p>{timeString}</p>
-                        </div>
+                        <DateTimeFormatter
+                          date={new Date(date)}
+                          duration={duration}
+                        />
                         <div className="flex items-center">
                           <FaLocationDot className="w-4 h-4 mr-2" />
                           <p>
@@ -117,7 +170,13 @@ export default function Index() {
                         </div>
                         <div className="flex flex-wrap items-center gap-2 mt-2 -mb-2">
                           {orderedTags.map((tag, i) => {
-                            return <Tag key={i} title={tag} />;
+                            return (
+                              <Tag
+                                key={i}
+                                title={tag.title}
+                                color={tag.color}
+                              />
+                            );
                           })}
                         </div>
                       </div>
@@ -127,7 +186,7 @@ export default function Index() {
                         onClick={() => {
                           selected === id ? setSelected("") : setSelected(id);
                         }}
-                        className="inline-flex items-center justify-center h-10 px-4 py-2 text-sm font-medium transition-colors rounded-bl-lg outline outline-1 rounded-tr-md outline-background-200"
+                        className="inline-flex items-center justify-center h-10 px-4 py-2 text-sm font-medium transition-all rounded-bl-lg outline outline-1 rounded-tr-md outline-background-200 group-hover:outline-background-300 dark:group-hover:outline-background-50 group-hover:shadow-inner"
                       >
                         More Info
                       </button>
@@ -139,7 +198,9 @@ export default function Index() {
                       <h1 className="text-3xl font-bold">{name}</h1>
                       <div className="flex flex-wrap items-center gap-2 text-lg ">
                         {orderedTags.map((tag, i) => {
-                          return <Tag key={i} title={tag} />;
+                          return (
+                            <Tag key={i} title={tag.title} color={tag.color} />
+                          );
                         })}
                       </div>
                     </div>
@@ -153,22 +214,16 @@ export default function Index() {
                             </p>
                           </div>
                           <div className="p-3">
-                            <div className="flex items-center">
-                              <FaCalendarDay className="w-4 h-4 mr-2 antialiased" />
-                              <p>{dateString}</p>
-                            </div>
-                            <div className="flex items-center">
-                              <FaRegClock className="w-4 h-4 mr-2" />
-                              <p>
-                                {timeString} {duration && `- ${endTimeString}`}
-                              </p>
-                            </div>
+                            <DateTimeFormatter
+                              date={new Date(date)}
+                              duration={duration}
+                            />
                             <div className="flex items-start">
                               <FaLocationDot className="w-4 h-4 mr-2" />
                               <p>
                                 {address}
                                 <br />
-                                {city}, {state}
+                                {city}, {state} {zip}
                               </p>
                             </div>
                           </div>

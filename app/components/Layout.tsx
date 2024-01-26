@@ -6,7 +6,7 @@ export default function Layout(props: { children: React.ReactNode }) {
   return (
     <div className="w-screen min-h-screen bg-background-50 dark:bg-background-900">
       <Navbar />
-      <main className="w-screen h-full min-h-screen p-12 mx-auto lg:max-w-5xl">
+      <main className="w-screen h-full min-h-screen p-12 mx-auto lg:max-w-5xl text-background-900 dark:text-background-50">
         {props.children}
       </main>
     </div>

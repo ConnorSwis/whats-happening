@@ -13,8 +13,16 @@ function hashToColor(title: string) {
   return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
 }
 
-export default function Tag({ title }: { title: string }) {
-  const color = hashToColor(title);
+export default function Tag({
+  title,
+  color,
+}: {
+  title: string;
+  color?: string;
+}) {
+  if (!color) {
+    color = hashToColor(title);
+  }
   return (
     <span
       className={
